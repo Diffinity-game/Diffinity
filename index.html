@@ -1,0 +1,760 @@
+<!--
+  ═══════════════════════════════════════════
+  Diffinity - 差ピクロス
+  Copyright (c) 2026 Cuprum Legion.
+  All Rights Reserved.
+
+  本ソフトウェアの無断転載・改変・商用利用を禁じます。
+  許可なく複製・配布・改変することは法律で禁止されています。
+  ═══════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Diffinity - 差ピクロス</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f2f5; padding: 12px; }
+  .container { background: white; padding: 16px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); max-width: 540px; width: 100%; overflow: hidden; }
+  h1 { text-align: center; font-size: 22px; color: #1a3a5c; letter-spacing: 1px; }
+  h1 span { color: #6f42c1; }
+  .subtitle { text-align: center; font-size: 12px; color: #666; margin-bottom: 6px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; margin: 0 2px; }
+  .badge-auto { background: #d1ecf1; color: #0c5460; }
+  .badge-n6 { background: #fff3cd; color: #856404; }
+  .badge-score { background: #d4edda; color: #155724; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 8px 0; font-size: 14px; font-weight: bold; color: #2c3e50; flex-wrap: wrap; gap: 6px; }
+  .timer { background: #f8f9fa; padding: 4px 12px; border-radius: 20px; font-family: monospace; font-size: 16px; color: #1a3a5c; }
+  .timer.running { background: #d4edda; color: #155724; }
+  .timer.stopped { background: #f8f9fa; color: #6c757d; }
+  .stats { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #2c3e50; background: #f8f9fa; padding: 4px 12px; border-radius: 20px; font-family: monospace; }
+  .stats .chain-count { color: #155724; font-weight: bold; }
+  .stats .mistake-count { color: #dc3545; font-weight: bold; }
+  .difficulty-selector { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .difficulty-selector label { font-size: 12px; color: #666; }
+  .difficulty-selector button { padding: 2px 8px; border: 2px solid #dee2e6; border-radius: 12px; background: white; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; touch-action: manipulation; color: #2c3e50; letter-spacing: 1px; }
+  .difficulty-selector button.active { border-color: #6f42c1; background: #6f42c1; color: white; }
+  .difficulty-selector button:active { transform: scale(0.92); }
+  .btn-daily { background: #ff9800; color: white; border: none; border-radius: 12px; padding: 2px 10px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; touch-action: manipulation; }
+  .btn-daily:hover { background: #f57c00; }
+  .lang-btn { padding: 2px 8px; border-radius: 12px; border: 2px solid #dee2e6; background: white; font-size: 14px; cursor: pointer; font-weight: bold; }
+  .lang-btn.active { border-color: #6f42c1; background: #6f42c1; color: white; }
+  .rules { background: #f8f9fa; padding: 5px 10px; border-radius: 6px; margin: 4px 0 8px 0; font-size: 12px; color: #2c3e50; border-left: 3px solid #6f42c1; }
+  .rules .highlight { background: #ffeb3b; padding: 0 4px; border-radius: 3px; }
+  .grid-container { display: grid; gap: 3px; margin: 0 auto; width: 100%; max-width: 420px; grid-template-columns: auto repeat(5, minmax(0, 1fr)); grid-template-rows: auto repeat(5, minmax(0, 1fr)); overflow: hidden; }
+  .grid-container > div { display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; font-family: monospace; font-size: 14px; background: #f8f9fa; color: #2c3e50; min-height: 32px; min-width: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grid-container .corner { background: transparent; min-width: auto; min-height: auto; }
+  .grid-container .col-hint { background: #e9ecef; border-bottom: 2px solid #6c757d; font-size: 11px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 40px; }
+  .grid-container .col-hint span { background: #dee2e6; padding: 0 2px; border-radius: 2px; line-height: 1.2; font-size: 10px; display: inline-block; min-width: 14px; text-align: center; }
+  .grid-container .row-hint { background: #e9ecef; border-right: 2px solid #6c757d; font-size: 11px; padding: 0 6px; justify-content: flex-end; gap: 1px; min-width: 40px; flex-wrap: wrap; }
+  .grid-container .row-hint span { background: #dee2e6; padding: 0 3px; border-radius: 3px; font-size: 10px; white-space: nowrap; }
+  .grid-container .cell { background: white; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; font-size: 20px; color: #1a3a5c; transition: all 0.15s; aspect-ratio: 1 / 1; width: 100%; height: 100%; touch-action: manipulation; }
+  .grid-container .cell.empty { background: #f8f9fa; color: #999; }
+  .grid-container .cell.filled { background: #cce5ff; color: #004085; }
+  .grid-container .cell.fixed { background: #d4edda; color: #155724; cursor: default; touch-action: none; }
+  .grid-container .cell.error { background: #f8d7da !important; color: #721c24; }
+  .grid-container .cell.hint-glow { animation: pulse 0.4s ease; }
+  @keyframes pulse { 0% { transform: scale(1); } 40% { transform: scale(1.08); background: #ffeb3b; } 100% { transform: scale(1); } }
+  .controls { display: flex; gap: 6px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+  .controls button { padding: 8px 14px; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; transition: 0.2s; touch-action: manipulation; font-weight: 600; }
+  .btn-start { background: #28a745; color: white; }
+  .btn-start:hover { background: #1e7e34; }
+  .btn-start:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-hint { background: #3498db; color: white; }
+  .btn-hint:hover { background: #2980b9; }
+  .btn-reset { background: #e74c3c; color: white; }
+  .btn-reset:hover { background: #c0392b; }
+  .btn-check { background: #6f42c1; color: white; }
+  .btn-check:hover { background: #5a32a3; }
+  .id-loader { display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+  .id-loader input { padding: 6px 10px; border: 2px solid #dee2e6; border-radius: 6px; font-size: 12px; font-family: monospace; width: 180px; }
+  .id-loader button { padding: 6px 12px; background: #6f42c1; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .status { text-align: center; margin-top: 10px; font-size: 13px; min-height: 20px; color: #2c3e50; font-weight: 500; }
+  .status.success { color: #27ae60; }
+  .status.error { color: #e74c3c; }
+  .status.loading { color: #6f42c1; }
+  .status.info { color: #007bff; }
+  .status.ready { color: #fd7e14; }
+  .problem-id { text-align: center; font-size: 11px; margin-top: 2px; color: #999; font-family: monospace; }
+  .problem-id span { font-weight: bold; color: #6f42c1; }
+  .difficulty-label { text-align: center; font-size: 12px; margin-top: 2px; color: #666; }
+  .score-display { text-align: center; font-size: 11px; color: #888; margin-top: 2px; }
+  .log { margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; font-size: 11px; max-height: 80px; overflow-y: auto; font-family: monospace; border: 1px solid #dee2e6; }
+  .log .event-fix { color: #155724; font-weight: bold; }
+  .log .event-gen { color: #6f42c1; font-weight: bold; }
+  .log .event-error { color: #dc3545; font-weight: bold; }
+  .log .event-info { color: #007bff; font-weight: bold; }
+  .log .event-delete { color: #fd7e14; font-weight: bold; }
+  .log .event-check { color: #856404; font-weight: bold; }
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
+  .modal { background: white; border-radius: 20px; padding: 24px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popIn 0.2s ease; max-height: 85vh; overflow-y: auto; }
+  .modal h2 { font-size: 24px; margin-bottom: 4px; }
+  .modal .grade { font-size: 42px; margin: 8px 0; }
+  .modal .detail { font-size: 13px; color: #2c3e50; margin: 4px 0; }
+  .modal .detail span { font-weight: bold; }
+  .modal .detail-stats { font-size: 11px; color: #666; margin: 4px 0; background: #f8f9fa; padding: 8px; border-radius: 8px; }
+  .modal .id-box { background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 13px; margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .modal .id-box button { margin: 0; padding: 6px 12px; font-size: 11px; background: #6f42c1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .modal .fav-btn { background: #e74c3c; }
+  .modal .fav-btn.active { background: #aaa; }
+  .modal .btn-next { background: #28a745; color: white; font-size: 15px; padding: 12px 24px; }
+  .modal > button { margin: 6px 4px; padding: 10px 20px; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; transition: 0.2s; touch-action: manipulation; font-weight: 600; }
+  .list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8f9fa; margin: 4px 0; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .list-item:hover { background: #e8f0fe; }
+  .list-item .info { flex: 1; }
+  .list-item button { padding: 4px 8px; font-size: 10px; background: #6f42c1; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 6px; }
+  .number-picker { position: fixed; background: white; padding: 14px; border-radius: 16px; box-shadow: 0 8px 40px rgba(0,0,0,0.3); z-index: 1000; transform: translate(-50%, -50%); animation: popIn 0.12s ease; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 220px; touch-action: manipulation; }
+  @keyframes popIn { from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .picker-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); z-index: 999; animation: fadeIn 0.12s ease; }
+  .picker-btn { width: 100%; aspect-ratio: 1; border: 2px solid #2c3e50; border-radius: 50%; background: white; font-size: 20px; font-weight: bold; color: #1a3a5c; cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center; user-select: none; }
+  .picker-btn:active { transform: scale(0.88); background: #d4edda; border-color: #155724; }
+  .picker-close { width: 100%; aspect-ratio: 1; border: 2px solid #e74c3c; border-radius: 50%; background: white; font-size: 18px; color: #e74c3c; cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center; user-select: none; }
+  .picker-close:active { transform: scale(0.88); background: #fce4ec; }
+  @media (max-width: 420px) {
+    .grid-container > div { font-size: 11px; min-height: 28px; min-width: 28px; }
+    .grid-container .cell { font-size: 16px; }
+    .controls button { padding: 6px 10px; font-size: 11px; }
+    .top-bar { flex-direction: column; gap: 4px; align-items: stretch; }
+    .difficulty-selector { justify-content: center; }
+    .timer { text-align: center; align-self: center; }
+    .stats { justify-content: center; }
+    .modal { padding: 18px; }
+    .modal .grade { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🧩 <span>Diff</span>inity</h1>
+  <div class="subtitle">
+    <span class="badge badge-auto" id="badgeAuto">差数列ヒント</span>
+    <span class="badge badge-n6">5×5 / N=6</span>
+    <span class="badge badge-score" id="scoreBadge">スコア: -</span>
+  </div>
+  <div class="top-bar">
+    <div class="timer stopped" id="timerDisplay">⏱️ 00:00</div>
+    <div class="stats" id="liveStats">
+      <span>🔗 <span class="chain-count" id="liveChain">0</span></span>
+      <span>❌ <span class="mistake-count" id="liveMistakes">0</span></span>
+    </div>
+    <div style="display:flex; gap:4px;" id="favHistBtns">
+      <button id="btnFavorites" title="お気に入り" style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:4px 8px; cursor:pointer;">⭐</button>
+      <button id="btnHistory" title="履歴" style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:4px 8px; cursor:pointer;">📊</button>
+      <button id="btnDaily" class="btn-daily" title="日替わり問題">📅</button>
+      <button id="langJa" class="lang-btn active" style="font-size:12px;">🇯🇵</button>
+      <button id="langEn" class="lang-btn" style="font-size:12px;">🇺🇸</button>
+    </div>
+    <div class="difficulty-selector" id="difficultySelector">
+      <label id="difficultyLabelText">難易度:</label>
+    </div>
+  </div>
+  <div class="rules" id="rulesText">
+    📐 各行・各列の <span class="highlight">隣接する差の数列</span> がヒントです。
+    例：<code>[2, 3, 1]</code> → 左から順に差が 2, 3, 1<br>
+    💡 数字をタップで再編集、長押しで削除（固定マス除く）
+  </div>
+  <div class="grid-container" id="gridContainer"></div>
+  <div class="controls">
+    <button class="btn-start" id="btnStart">▶ START</button>
+    <button class="btn-hint" id="btnHint">💡 ヒント</button>
+    <button class="btn-check" id="btnCheck">🔍 チェック</button>
+    <button class="btn-reset" id="btnReset">🔄 リセット</button>
+  </div>
+  <div class="id-loader">
+    <input type="text" id="problemIdInput" placeholder="v1.2-3-123456" style="font-size:12px;">
+    <button id="btnLoadId">📥 読込</button>
+  </div>
+  <div class="status" id="status">🟡 難易度を選んで「START」を押してください</div>
+  <div class="problem-id" id="problemIdDisplay"></div>
+  <div class="difficulty-label" id="difficultyLabel"></div>
+  <div class="score-display" id="scoreDisplay"></div>
+  <div class="log" id="log">📋 ログ</div>
+
+  <!-- 著作権フッター -->
+  <footer style="text-align:center; font-size:12px; color:#999; padding:12px 0; border-top:1px solid #eee; margin-top:16px;">
+    <span>🧩 Diffinity</span> —
+    © 2026 <strong>Cuprum Legion</strong>. All Rights Reserved.
+  </footer>
+</div>
+
+<script>
+/*
+ * Diffinity - 差ピクロス
+ * Copyright (c) 2026 Cuprum Legion. All Rights Reserved.
+ *
+ * 本ソフトウェアの無断転載・改変・商用利用を禁じます。
+ * 許可なく複製・配布・改変することは法律で禁止されています。
+ */
+
+// ============================================================
+// Diffinity v1.2 — 完全多言語版（リセット→再開 根本修正 / ライセンス表記追加）
+// ============================================================
+const SIZE=5, N=6, NUMBERS=[1,2,3,4,5,6], TARGET_SCORE=0.60, GENERATOR_VERSION='1.2';
+const DIFFICULTY_TABLE={
+  1:{fixedCount:5,rateMin:0.60,rateMax:0.85,label:'★☆☆☆☆'},
+  2:{fixedCount:4,rateMin:0.55,rateMax:0.85,label:'★★☆☆☆'},
+  3:{fixedCount:3,rateMin:0.50,rateMax:0.85,label:'★★★☆☆'},
+  4:{fixedCount:3,rateMin:0.40,rateMax:0.65,label:'★★★★☆'},
+  5:{fixedCount:3,rateMin:0.40,rateMax:0.60,label:'★★★★★'}
+};
+
+// ==================== 翻訳データ ====================
+const LOCALE = {
+  ja: {
+    title: '🧩 <span>Diff</span>inity', badgeAuto: '差数列ヒント', scoreBadge: 'スコア: -',
+    timer: '⏱️ 00:00', chainPrefix: '🔗', mistakePrefix: '❌',
+    rules: '📐 各行・各列の <span class="highlight">隣接する差の数列</span> がヒントです。例：<code>[2, 3, 1]</code> → 左から順に差が 2, 3, 1<br>💡 数字をタップで再編集、長押しで削除（固定マス除く）',
+    btnStart: '▶ START', btnResume: '▶ 再開', btnHint: '💡 ヒント', btnCheck: '🔍 チェック', btnReset: '🔄 リセット',
+    btnFavorites: '⭐', btnHistory: '📊', btnDaily: '📅', btnLoad: '📥 読込',
+    difficultyLabel: '難易度:', difficultyTooltip: '固定マス{fixed}個', copyPrompt: 'コピー:',
+    statusReady: '🟡 難易度を選んで「START」を押してください',
+    statusLoading: '⏳ 問題を生成中...', statusSuccess: '✅ ゲームスタート！',
+    statusError: '⚠️ エラーが発生しました', statusGenFail: '⚠️ 生成失敗。別の難易度を試してください。',
+    statusReset: '🔄 リセットしました。「再開」で同じ問題をプレイ', statusResume: '✅ 同じ問題を再開！',
+    statusCheckOk: '✅ 一致（{filled}/{total}）', statusCheckError: '⚠️ エラーを赤表示',
+    statusHint: '💡 ({r},{c}) → {num}', statusNoHint: '💡 確定できるマスがありません',
+    statusDelete: '🗑️ ({r},{c}) 削除', statusDeleteShort: '🗑️ 削除しました',
+    statusInput: '✅ ({r},{c}) = {num}',
+    statusMistakeAdj: '❌ ({r},{c}) 隣接差違反 (期待 {expected})', statusMistakeSeq: '❌ ({r},{c}) 数列違反',
+    statusComplete: '🎉 完成！ {grade}', statusWrong: '⚠️ 不一致',
+    statusIdError: '⚠️ 問題IDを入力してください', statusIdInvalid: '⚠️ 無効なID形式です',
+    statusIdNotFound: '⚠️ この問題IDは存在しません',
+    statusIdLoading: '⏳ 問題ID {id} を読み込み中...', statusIdLoaded: '✅ {id} を開始！',
+    logReady: '📌 準備完了。STARTで問題を生成します', logLoad: '🔄 問題をロードしました',
+    logReset: '🔄 リセットしました', logResume: '▶ 再開しました',
+    logGenerate: '✨ 生成開始... ({label}, seed: {seed})', logGenerated: '✨ 生成成功 ID: {id}',
+    logGenFail: '⚠️ 生成失敗', logStep: 'Step {step}: ({r},{c}) = {num} {cands}',
+    logStepChain: '🔗', logStepMultiple: '(候補複数)',
+    logEdit: '✏️ ({r},{c}) を {old} → {new} に変更', logDelete: '🗑️ ({r},{c}) 削除',
+    logCheck: '🔍 チェック: {count}件の不一致',
+    logComplete: '🏁 完成 {time} / 🔗{chain}/{total} / ❌{mistakes} / {grade}',
+    logLoadId: '📥 問題ID {id} を読み込みました', logIdNotFound: '⚠️ 問題ID {id} は存在しません',
+    modalFavorite: '⭐ お気に入り', modalNoFavorites: 'お気に入りはありません',
+    modalHistory: '📊 クリア履歴', modalNoHistory: '履歴はありません',
+    modalClose: 'とじる', modalPlay: 'プレイ', modalDelete: '削除',
+    modalCopy: '📋 コピー', modalCopyDone: '✅ コピー完了', modalNext: '▶ 次の問題',
+    modalDetailTime: '⏱️ タイム', modalDetailChain: '🔗 連鎖', modalDetailMistakes: '❌ ミス',
+    modalDetailStats: '📊 問題詳細：論理率 {logicRate}% / T3 {t3}回 / 最大連鎖 {maxChain}',
+    difficultyLabelText: '{stars} 固定マス: {fixed}',
+    idPlaceholder: 'v1.2-3-123456', problemIdPrefix: '🧩 Problem ID: ',
+    scoreDisplay: 'スコア: {score}',
+    scoreDetail: '固定: {fixed} | 連鎖密度: {density} | T3: {t3} | 最大連鎖: {maxChain}',
+  },
+  en: {
+    title: '🧩 <span>Diff</span>inity', badgeAuto: 'Diff Sequence Clues', scoreBadge: 'Score: -',
+    timer: '⏱️ 00:00', chainPrefix: '🔗', mistakePrefix: '❌',
+    rules: '📐 <span class="highlight">Adjacent difference sequences</span> are your clues. Example: <code>[2, 3, 1]</code> → differences from left are 2, 3, 1<br>💡 Tap a number to edit, long-press to delete (except fixed cells)',
+    btnStart: '▶ START', btnResume: '▶ Resume', btnHint: '💡 Hint', btnCheck: '🔍 Check', btnReset: '🔄 Reset',
+    btnFavorites: '⭐', btnHistory: '📊', btnDaily: '📅', btnLoad: '📥 Load',
+    difficultyLabel: 'Difficulty:', difficultyTooltip: 'Fixed cells: {fixed}', copyPrompt: 'Copy:',
+    statusReady: '🟡 Select difficulty and press "START"',
+    statusLoading: '⏳ Generating puzzle...', statusSuccess: '✅ Game started!',
+    statusError: '⚠️ An error occurred', statusGenFail: '⚠️ Generation failed. Try another difficulty.',
+    statusReset: '🔄 Reset. Press "Resume" to play the same puzzle', statusResume: '✅ Resumed the same puzzle!',
+    statusCheckOk: '✅ All match ({filled}/{total})', statusCheckError: '⚠️ Errors highlighted in red',
+    statusHint: '💡 ({r},{c}) → {num}', statusNoHint: '💡 No forced move found',
+    statusDelete: '🗑️ ({r},{c}) deleted', statusDeleteShort: '🗑️ Deleted',
+    statusInput: '✅ ({r},{c}) = {num}',
+    statusMistakeAdj: '❌ ({r},{c}) adjacent diff mismatch (expected {expected})', statusMistakeSeq: '❌ ({r},{c}) sequence mismatch',
+    statusComplete: '🎉 Complete! {grade}', statusWrong: '⚠️ Mismatch',
+    statusIdError: '⚠️ Please enter a Problem ID', statusIdInvalid: '⚠️ Invalid ID format',
+    statusIdNotFound: '⚠️ Problem ID not found',
+    statusIdLoading: '⏳ Loading problem ID {id}...', statusIdLoaded: '✅ Started {id}!',
+    logReady: '📌 Ready. Press START to generate a puzzle', logLoad: '🔄 Puzzle loaded',
+    logReset: '🔄 Reset', logResume: '▶ Resumed',
+    logGenerate: '✨ Generating... ({label}, seed: {seed})', logGenerated: '✨ Generated successfully ID: {id}',
+    logGenFail: '⚠️ Generation failed', logStep: 'Step {step}: ({r},{c}) = {num} {cands}',
+    logStepChain: '🔗', logStepMultiple: '(multiple candidates)',
+    logEdit: '✏️ ({r},{c}) changed {old} → {new}', logDelete: '🗑️ ({r},{c}) deleted',
+    logCheck: '🔍 Checked: {count} mismatches',
+    logComplete: '🏁 Completed {time} / 🔗{chain}/{total} / ❌{mistakes} / {grade}',
+    logLoadId: '📥 Loaded problem ID {id}', logIdNotFound: '⚠️ Problem ID {id} not found',
+    modalFavorite: '⭐ Favorites', modalNoFavorites: 'No favorites yet',
+    modalHistory: '📊 History', modalNoHistory: 'No history yet',
+    modalClose: 'Close', modalPlay: 'Play', modalDelete: 'Delete',
+    modalCopy: '📋 Copy', modalCopyDone: '✅ Copied!', modalNext: '▶ Next Puzzle',
+    modalDetailTime: '⏱️ Time', modalDetailChain: '🔗 Chain', modalDetailMistakes: '❌ Mistakes',
+    modalDetailStats: '📊 Puzzle details: Logic rate {logicRate}% / T3 {t3} / Max chain {maxChain}',
+    difficultyLabelText: '{stars} Fixed cells: {fixed}',
+    idPlaceholder: 'v1.2-3-123456', problemIdPrefix: '🧩 Problem ID: ',
+    scoreDisplay: 'Score: {score}',
+    scoreDetail: 'Fixed: {fixed} | Density: {density} | T3: {t3} | Max Chain: {maxChain}',
+  }
+};
+
+// ==================== 言語管理 ====================
+let currentLang = 'ja';
+function t(key, params = {}) {
+  let text = LOCALE[currentLang][key];
+  if (text === undefined) text = LOCALE['en'][key] || key;
+  for (const [k, v] of Object.entries(params)) text = text.replace(new RegExp(`{${k}}`, 'g'), v);
+  return text;
+}
+function applyStaticTranslations() {
+  document.getElementById('badgeAuto').textContent = t('badgeAuto');
+  document.getElementById('rulesText').innerHTML = t('rules');
+  document.getElementById('btnHint').textContent = t('btnHint');
+  document.getElementById('btnCheck').textContent = t('btnCheck');
+  document.getElementById('btnReset').textContent = t('btnReset');
+  document.getElementById('btnFavorites').textContent = t('btnFavorites');
+  document.getElementById('btnHistory').textContent = t('btnHistory');
+  document.getElementById('btnDaily').textContent = t('btnDaily');
+  document.getElementById('btnLoadId').textContent = t('btnLoad');
+  document.getElementById('problemIdInput').placeholder = t('idPlaceholder');
+  document.getElementById('scoreBadge').textContent = t('scoreBadge');
+  document.getElementById('difficultyLabelText').textContent = t('difficultyLabel');
+  document.querySelector('h1').innerHTML = t('title');
+  document.getElementById('timerDisplay').textContent = t('timer');
+  document.getElementById('log').innerHTML = '📋 ' + (currentLang==='ja'?'ログ':'Log');
+  diffSelector.querySelectorAll('button').forEach(btn => {
+    const level = parseInt(btn.dataset.level);
+    if (level) btn.title = t('difficultyTooltip', {fixed: DIFFICULTY_TABLE[level].fixedCount});
+  });
+  if (curMetrics) updateDiffLabel();
+  if (curScore !== undefined) updateScoreDisplay();
+}
+
+function updateStartButton() {
+  if (isGenerating) {
+    btnStart.textContent = '⏳ ' + (currentLang==='ja'?'処理中...':'Processing...');
+    btnStart.onclick = null;
+  } else if (resetBackup) {
+    btnStart.textContent = t('btnResume');
+    btnStart.onclick = resumeGame;
+  } else {
+    btnStart.textContent = t('btnStart');
+    btnStart.onclick = startGame;
+  }
+}
+
+// ==================== localStorage統合 ====================
+const STORAGE_KEY='diffinity_data';
+function loadStorage(){ try{ const d=JSON.parse(localStorage.getItem(STORAGE_KEY)); return d||{favorites:[],history:[],settings:{difficulty:3}}; }catch(e){ return {favorites:[],history:[],settings:{difficulty:3}}; } }
+function saveStorage(data){ localStorage.setItem(STORAGE_KEY,JSON.stringify(data)); }
+function getFavorites(){ return loadStorage().favorites; }
+function saveFavorites(arr){ const d=loadStorage(); d.favorites=arr; saveStorage(d); }
+function isFavorite(id){ return getFavorites().includes(id); }
+function toggleFavorite(id){ const favs=getFavorites(); const idx=favs.indexOf(id); if(idx>=0)favs.splice(idx,1); else favs.push(id); saveFavorites(favs); }
+function getHistory(){ return loadStorage().history; }
+function saveHistory(arr){ const d=loadStorage(); d.history=arr; saveStorage(d); }
+function addHistoryRecord(rec){ const hist=getHistory(); hist.unshift(rec); if(hist.length>100)hist.length=100; saveHistory(hist); }
+function getSettings(){ return loadStorage().settings; }
+function saveSettings(s){ const d=loadStorage(); d.settings=s; saveStorage(d); }
+
+// ==================== シードRNG ====================
+function createRNG(seed){ let s=seed|0; return{next(){ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; }}; }
+function shuffle(arr,rng){ const r=[...arr]; for(let i=r.length-1;i>0;i--){ const j=Math.floor(rng.next()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
+
+// ==================== 日替わりシード ====================
+function getDailySeed() {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) { hash = ((hash << 5) - hash) + dateStr.charCodeAt(i); hash |= 0; }
+  return Math.abs(hash) % 2147483647;
+}
+
+// ==================== 盤面生成 ====================
+function isValidPlacement(g,r,c,n){ const D=[[-1,0],[1,0],[0,-1],[0,1]]; for(const[dr,dc]of D){ const nr=r+dr,nc=c+dc; if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&g[nr][nc]!==null){ const d=Math.abs(n-g[nr][nc]); if(d<1||d>5)return false; } } return true; }
+function generateRandomGrid(rng){ const g=Array.from({length:SIZE},()=>Array(SIZE).fill(null)); function bt(p){ if(p===SIZE*SIZE)return true; const r=Math.floor(p/SIZE),c=p%SIZE; for(const n of shuffle(NUMBERS,rng)){ if(isValidPlacement(g,r,c,n)){ g[r][c]=n; if(bt(p+1))return true; g[r][c]=null; } } return false; } bt(0); return g; }
+function extractHints(s){ const h=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){ if(r<SIZE-1)h.push({r1:r,c1:c,r2:r+1,c2:c,diff:Math.abs(s[r][c]-s[r+1][c])}); if(c<SIZE-1)h.push({r1:r,c1:c,r2:r,c2:c+1,diff:Math.abs(s[r][c]-s[r][c+1])}); } return h; }
+function getRowDiffSequence(g,r){ const s=[]; for(let c=0;c<SIZE-1;c++)s.push((g[r][c]!==null&&g[r][c+1]!==null)?Math.abs(g[r][c]-g[r][c+1]):null); return s; }
+function getColDiffSequence(g,c){ const s=[]; for(let r=0;r<SIZE-1;r++)s.push((g[r][c]!==null&&g[r+1][c]!==null)?Math.abs(g[r][c]-g[r+1][c]):null); return s; }
+
+// ==================== ソルバー ====================
+function solveWithEvents(fixed,hints){
+  const grid=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  const filled=Array.from({length:SIZE},()=>Array(SIZE).fill(false));
+  for(const[k,v]of Object.entries(fixed)){ const[r,c]=k.split(',').map(Number); grid[r][c]=v; filled[r][c]=true; }
+  let solutions=0,steps=0,maxChain=0,curChain=0,t3E=[],t1E=[],chainE=[];
+  function getCands(r,c){ const R=[]; for(const n of NUMBERS){ let ok=true; for(const h of hints)if((h.r1===r&&h.c1===c)||(h.r2===r&&h.c2===c)){ const o=h.r1===r?h.r2:h.r1,o2=h.c1===c?h.c2:h.c1; if(grid[o][o2]!==null&&Math.abs(n-grid[o][o2])!==h.diff){ok=false;break;} } if(ok)R.push(n); } return R; }
+  function getConstraintCands(r,c){ const R=[]; for(const h of hints)if((h.r1===r&&h.c1===c)||(h.r2===r&&h.c2===c)){ const o=h.r1===r?h.r2:h.r1,o2=h.c1===c?h.c2:h.c1; if(grid[o][o2]!==null){ const C=[]; for(const n of NUMBERS)if(Math.abs(n-grid[o][o2])===h.diff)C.push(n); R.push(C); } } return R; }
+  function isT1(r,c){ const val=grid[r][c]; if(val!==1&&val!==6)return false; for(const h of hints)if((h.r1===r&&h.c1===c)||(h.r2===r&&h.c2===c)){ const o=h.r1===r?h.r2:h.r1, o2=h.c1===c?h.c2:h.c1; if(grid[o][o2]!==null&&h.diff===5)return true; } return false; }
+  function propagate(){ let ch=true,l=0; while(ch&&l<40){ ch=false;l++; const tF=[],t3F=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){ if(filled[r][c])continue; const aC=getCands(r,c); if(aC.length===1){ const cC=getConstraintCands(r,c); let sS=cC.some(c=>c.length===1); if(!sS&&cC.length>=2)t3F.push({r,c,num:aC[0]}); else tF.push({r,c,num:aC[0]}); } }
+      for(const{r,c,num}of t3F){ grid[r][c]=num;filled[r][c]=true;ch=true;curChain++;t3E.push({r,c,num,step:steps});if(curChain>maxChain)maxChain=curChain; }
+      for(const{r,c,num}of tF){ grid[r][c]=num;filled[r][c]=true;ch=true;curChain++; if(isT1(r,c))t1E.push({r,c,num,step:steps}); if(curChain>maxChain)maxChain=curChain; }
+      if(t3F.length+tF.length>0){ chainE.push({step:steps,count:t3F.length+tF.length,t3:t3F.length}); steps++; }else curChain=0; } }
+  function backtrack(pos){ if(pos===SIZE*SIZE){solutions++;return;} const r=Math.floor(pos/SIZE),c=pos%SIZE; if(filled[r][c]){backtrack(pos+1);return;} for(const n of getCands(r,c)){ grid[r][c]=n;filled[r][c]=true;backtrack(pos+1);grid[r][c]=null;filled[r][c]=false;if(solutions>1)return; } }
+  propagate();backtrack(0);
+  return{solutions,steps,chainEvents:chainE,t3Events:t3E,t1Events:t1E,maxChainLength:maxChain,totalFilled:filled.flat().filter(v=>v).length};
+}
+function evaluatePuzzle(sol,fixed,hints){
+  const res=solveWithEvents(fixed,hints); const tc=SIZE*SIZE,fc=Object.keys(fixed).length;
+  const tfp=tc-fc-res.steps,cd=res.steps>0?tfp/res.steps:0, t3=res.t3Events.length,t1=res.t1Events.length;
+  let ts=1.0; if(t3>0){ const p=res.steps>0?res.t3Events[0].step/res.steps:0.5; ts=Math.min(1,Math.max(0,1-Math.abs(p-0.5)*4)); }
+  const score=Math.max(0,Math.min(1,(tc>fc?(tc-fc-res.steps)/(tc-fc):1)*0.30+cd*0.20+Math.min(1,t3)*0.15+ts*0.15+Math.min(1,res.maxChainLength/7)*0.10+(1/(fc+1))*0.05+Math.min(1,(t1+t3)/Math.max(1,res.steps*0.5))*0.05));
+  return{score,metrics:{chainDensity:cd,t3Count:t3,t3TimingScore:ts,maxChainScore:Math.min(1,res.maxChainLength/7),fixedScore:1/(fc+1),techBalance:Math.min(1,(t1+t3)/Math.max(1,res.steps*0.5)),diversity:new Set([t1>0?'T1':'',t3>0?'T3':'',res.steps>0?'chain':'',res.solutions===1?'unique':''].filter(Boolean)).size/4,steps:res.steps,maxChainLength:res.maxChainLength,t1Count:t1,solutions:res.solutions,fixedCount:fc,propagateCompleteRate:tc>fc?(tc-fc-res.steps)/(tc-fc):1},result:res};
+}
+
+// ==================== Web Worker ====================
+const workerCode = `
+  const SIZE=5, NUMBERS=[1,2,3,4,5,6], TARGET_SCORE=0.60;
+  const DIFFICULTY_TABLE=${JSON.stringify(DIFFICULTY_TABLE)};
+  function createRNG(seed){ let s=seed|0; return{next(){ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; }}; }
+  function shuffle(arr,rng){ const r=[...arr]; for(let i=r.length-1;i>0;i--){ const j=Math.floor(rng.next()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
+  ${isValidPlacement.toString()}
+  ${generateRandomGrid.toString()}
+  ${extractHints.toString()}
+  ${getRowDiffSequence.toString()}
+  ${getColDiffSequence.toString()}
+  ${solveWithEvents.toString()}
+  ${evaluatePuzzle.toString()}
+  function generatePuzzleDeterministic(level,seed){
+    const cfg=DIFFICULTY_TABLE[level],rng=createRNG(seed);
+    const sol=generateRandomGrid(rng),hints=extractHints(sol);
+    const allPos=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)allPos.push([r,c]);
+    const shuf=shuffle(allPos,rng).slice(0,cfg.fixedCount);
+    const fixed={}; shuf.forEach(([r,c])=>{fixed[\`\${r},\${c}\`]=sol[r][c];});
+    const ev=evaluatePuzzle(sol,fixed,hints),rate=ev.metrics.propagateCompleteRate||0;
+    if(ev.result.solutions===1&&ev.score>=TARGET_SCORE&&rate>=cfg.rateMin&&rate<cfg.rateMax)
+      return{solution:sol,fixed,hints,score:ev.score,metrics:ev.metrics,propagateRate:rate,fixedCount:cfg.fixedCount,seed};
+    return null;
+  }
+  onmessage = function(e) {
+    const {level,seed,requestId}=e.data;
+    let puzzle=null, finalSeed=seed;
+    for(let retry=0;retry<300;retry++){
+      finalSeed=seed+retry;
+      puzzle=generatePuzzleDeterministic(level,finalSeed);
+      if(puzzle)break;
+    }
+    postMessage({requestId,puzzle,seed:finalSeed});
+  };
+`;
+const workerBlob = new Blob([workerCode], {type:'application/javascript'});
+const workerUrl = URL.createObjectURL(workerBlob);
+const generatorWorker = new Worker(workerUrl);
+let workerRequestId = 0;
+const workerCallbacks = {};
+generatorWorker.onmessage = function(e) {
+  const {requestId, puzzle, seed} = e.data;
+  if (workerCallbacks[requestId]) { workerCallbacks[requestId]({puzzle, seed}); delete workerCallbacks[requestId]; }
+};
+function generateAsync(level, seed, callback) {
+  const requestId = ++workerRequestId;
+  workerCallbacks[requestId] = callback;
+  generatorWorker.postMessage({level, seed, requestId});
+}
+window.addEventListener('beforeunload', () => { generatorWorker.terminate(); URL.revokeObjectURL(workerUrl); });
+
+// ==================== 状態 ====================
+let curSol=null, curFixed=null, curHints=null, curRowHints=[], curColHints=[];
+let curScore=0, curMetrics=null, curPropRate=0;
+let userGrid=null, isFixed=null, isFilled=null;
+let logEntries=[], stepCount=0, isGenerating=false, errorCells=new Set();
+let mistakeCount=0, logicalChainCount=0;
+let timerStart=null, timerInt=null, timerSec=0, timerRun=false, completed=false, gameReady=false;
+let selDiff=3, curProblemId=null, resetBackup=null;
+
+// DOM
+const gridEl=document.getElementById('gridContainer');
+const statusEl=document.getElementById('status'); const logEl=document.getElementById('log');
+const scoreBadge=document.getElementById('scoreBadge'); const scoreDisp=document.getElementById('scoreDisplay');
+const diffLabel=document.getElementById('difficultyLabel');
+const btnStart=document.getElementById('btnStart'); const timerDisp=document.getElementById('timerDisplay');
+const liveChain=document.getElementById('liveChain'); const liveMistakes=document.getElementById('liveMistakes');
+const probIdDisp=document.getElementById('problemIdDisplay'); const diffSelector=document.getElementById('difficultySelector');
+const langJaBtn=document.getElementById('langJa'); const langEnBtn=document.getElementById('langEn');
+
+// ==================== タイマー ====================
+function startTimer(){ if(timerRun)return; timerRun=true; completed=false; timerSec=0; timerStart=Date.now(); timerDisp.className='timer running'; updateTimerDisp(); timerInt=setInterval(()=>{ timerSec=Math.floor((Date.now()-timerStart)/1000); updateTimerDisp(); },200); }
+function stopTimer(){ if(timerInt){clearInterval(timerInt);timerInt=null;} timerRun=false; timerDisp.className='timer stopped'; }
+function resetTimer(){ stopTimer(); timerSec=0; completed=false; timerDisp.className='timer stopped'; updateTimerDisp(); }
+function updateTimerDisp(){ const m=String(Math.floor(timerSec/60)).padStart(2,'0'), s=String(timerSec%60).padStart(2,'0'); timerDisp.textContent=`⏱️ ${m}:${s}`; }
+function getTime(){ const m=String(Math.floor(timerSec/60)).padStart(2,'0'), s=String(timerSec%60).padStart(2,'0'); return `${m}:${s}`; }
+
+// ==================== 難易度UI ====================
+function buildDiffButtons(){
+  diffSelector.querySelectorAll('button').forEach(b=>b.remove());
+  for(let l=1;l<=5;l++){
+    const btn=document.createElement('button');
+    btn.dataset.level=l; btn.textContent=DIFFICULTY_TABLE[l].label;
+    btn.title=t('difficultyTooltip', {fixed: DIFFICULTY_TABLE[l].fixedCount});
+    btn.addEventListener('click',()=>setDifficulty(l));
+    if(l===selDiff)btn.classList.add('active');
+    diffSelector.appendChild(btn);
+  }
+}
+function setDifficulty(l){ selDiff=l; diffSelector.querySelectorAll('button').forEach(b=>b.classList.toggle('active',+b.dataset.level===l)); saveSettings({difficulty:l}); }
+
+// ==================== ゲーム状態 ====================
+function initGame(sol,fixed,hints,score,metrics,propRate,problemId){
+  curSol=sol; curFixed=fixed; curHints=hints; curScore=score; curMetrics=metrics; curPropRate=propRate; curProblemId=problemId;
+  userGrid=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  isFixed=Array.from({length:SIZE},()=>Array(SIZE).fill(false));
+  isFilled=Array.from({length:SIZE},()=>Array(SIZE).fill(false));
+  for(const k of Object.keys(fixed)){ const[r,c]=k.split(',').map(Number); isFixed[r][c]=true; userGrid[r][c]=fixed[k]; isFilled[r][c]=true; }
+  curRowHints=[]; for(let r=0;r<SIZE;r++)curRowHints.push(getRowDiffSequence(sol,r));
+  curColHints=[]; for(let c=0;c<SIZE;c++)curColHints.push(getColDiffSequence(sol,c));
+  stepCount=0;mistakeCount=0;logicalChainCount=0;logEntries=[t('logLoad')];errorCells=new Set();
+  completed=false;gameReady=true; probIdDisp.innerHTML=`${t('problemIdPrefix')}<span>${problemId}</span>`;
+  resetBackup = null; updateLiveStats(); updateStartButton();
+}
+
+function resetGame(){
+  if(!curSol)return;
+  resetTimer(); gameReady=false; completed=false;
+  resetBackup={solution:curSol,fixed:curFixed,hints:curHints,score:curScore,metrics:curMetrics,propagateRate:curPropRate,problemId:curProblemId};
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(!isFixed[r][c]){userGrid[r][c]=null;isFilled[r][c]=false;}
+  errorCells.clear();stepCount=0;mistakeCount=0;logicalChainCount=0;logEntries=[t('logReset')];
+  renderAll(); updateStatus(t('statusReset'),'ready');
+  updateStartButton(); updateLiveStats();
+}
+
+function resumeGame(){
+  if(!resetBackup)return;
+  initGame(resetBackup.solution,resetBackup.fixed,resetBackup.hints,resetBackup.score,resetBackup.metrics,resetBackup.propagateRate,resetBackup.problemId);
+  renderAll(); resetTimer(); startTimer();
+  updateStatus(t('statusResume'),'success'); logEntries.push(t('logResume'));
+  updateLog();
+}
+
+function startGameWithSeed(seed, label){
+  if(isGenerating)return;
+  resetTimer(); gameReady=false; completed=false; btnStart.disabled=true;
+  isGenerating = true; resetBackup = null; updateStartButton();
+  updateStatus(t('statusLoading'),'loading'); logEntries.push(t('logGenerate',{label:label,seed:seed}));
+  generateAsync(selDiff, seed, (data)=>{
+    isGenerating=false;
+    if(data.puzzle){
+      const id=makeProblemId(selDiff,data.puzzle.seed);
+      initGame(data.puzzle.solution,data.puzzle.fixed,data.puzzle.hints,data.puzzle.score,data.puzzle.metrics,data.puzzle.propagateRate,id);
+      logEntries.push(t('logGenerated',{id:id})); renderAll(); startTimer();
+      updateStatus(t('statusSuccess'),'success');
+    }else{
+      logEntries.push(t('logGenFail')); updateStatus(t('statusGenFail'),'error'); gameReady=false;
+    }
+    btnStart.disabled=false; updateStartButton(); updateLog();
+  });
+}
+function startGame(){ const cfg=DIFFICULTY_TABLE[selDiff]; const seed=Math.floor(Math.random()*2147483647); startGameWithSeed(seed, cfg.label); }
+function startDailyGame(){ const dailySeed = getDailySeed(); const cfg=DIFFICULTY_TABLE[selDiff]; startGameWithSeed(dailySeed, `📅 ${cfg.label}`); }
+function makeProblemId(lvl,seed){ return `v${GENERATOR_VERSION}-${lvl}-${seed}`; }
+function parseProblemId(str){ const m=str.match(/^v(\d+\.\d+)-(\d+)-(\d+)$/); if(m)return{version:m[1],level:+m[2],seed:+m[3]}; const old=str.match(/^v(\d+\.\d+)-(\d+)$/); if(old)return{version:old[1],level:null,seed:+old[2]}; return null; }
+function loadProblemById(){
+  if(isGenerating)return;
+  const input=document.getElementById('problemIdInput').value.trim();
+  if(!input){updateStatus(t('statusIdError'),'error');return;}
+  const parsed=parseProblemId(input);
+  if(!parsed){updateStatus(t('statusIdInvalid'),'error');return;}
+  const level=parsed.level||selDiff;
+  stopTimer(); gameReady=false; completed=false; btnStart.disabled=true;
+  isGenerating = true; resetBackup = null; updateStartButton();
+  updateStatus(t('statusIdLoading',{id:input}),'loading');
+  generateAsync(level, parsed.seed, (data)=>{
+    isGenerating=false;
+    if(data.puzzle){
+      setDifficulty(level); buildDiffButtons();
+      const id=makeProblemId(level,data.puzzle.seed);
+      initGame(data.puzzle.solution,data.puzzle.fixed,data.puzzle.hints,data.puzzle.score,data.puzzle.metrics,data.puzzle.propagateRate,id);
+      logEntries.push(t('logLoadId',{id:input})); renderAll(); resetTimer(); startTimer();
+      updateStatus(t('statusIdLoaded',{id:input}),'success');
+    }else{
+      updateStatus(t('statusIdNotFound'),'error');
+      logEntries.push(t('logIdNotFound',{id:input})); gameReady=false; renderAll();
+    }
+    btnStart.disabled=false; updateStartButton(); updateLog();
+  });
+}
+
+// ==================== コピー ====================
+function copyProblemId(id){
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(id).then(()=>showCopyOk()).catch(()=>fallbackCopy(id));
+  else fallbackCopy(id);
+}
+function fallbackCopy(text){ const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select(); try{document.execCommand('copy');showCopyOk();}catch(e){prompt(t('copyPrompt'), text);} document.body.removeChild(ta); }
+function showCopyOk(){ const btn=document.querySelector('.id-box button'); if(btn){const o=btn.textContent;btn.textContent=t('modalCopyDone');setTimeout(()=>{btn.textContent=o;},1500);} }
+
+// ==================== モーダル ====================
+function showFavoritesModal(){
+  const favs=getFavorites(); const overlay=createModalOverlay(); const modal=createModal();
+  let h=`<h2>${t('modalFavorite')}</h2>`;
+  if(favs.length===0) h+=`<p>${t('modalNoFavorites')}</p>`;
+  else favs.forEach(id=>{ h+=`<div class="list-item"><span class="info">${id}</span><button class="play-btn">${t('modalPlay')}</button><button class="del-btn">${t('modalDelete')}</button></div>`; });
+  h+=`<button class="close-btn">${t('modalClose')}</button>`; modal.innerHTML=h;
+  modal.querySelector('.close-btn').addEventListener('click',()=>overlay.remove());
+  modal.querySelectorAll('.play-btn').forEach((b,i)=>b.addEventListener('click',()=>{loadFromModal(favs[i]);overlay.remove();}));
+  modal.querySelectorAll('.del-btn').forEach((b,i)=>b.addEventListener('click',()=>{removeFavorite(favs[i]);overlay.remove();showFavoritesModal();}));
+  overlay.appendChild(modal); document.body.appendChild(overlay);
+}
+function showHistoryModal(){
+  const hist=getHistory(); const overlay=createModalOverlay(); const modal=createModal();
+  let h=`<h2>${t('modalHistory')}</h2>`;
+  if(hist.length===0) h+=`<p>${t('modalNoHistory')}</p>`;
+  else hist.forEach(r=>{ h+=`<div class="list-item"><span class="info">${r.id} (${r.difficulty})<br>${r.time} 🔗${r.chain}/${r.total} ❌${r.mistakes} ${r.grade}</span><button class="play-btn">${t('modalPlay')}</button></div>`; });
+  h+=`<button class="close-btn">${t('modalClose')}</button>`; modal.innerHTML=h;
+  modal.querySelector('.close-btn').addEventListener('click',()=>overlay.remove());
+  modal.querySelectorAll('.play-btn').forEach((b,i)=>b.addEventListener('click',()=>{loadFromModal(hist[i].id);overlay.remove();}));
+  overlay.appendChild(modal); document.body.appendChild(overlay);
+}
+function createModalOverlay(){ const o=document.createElement('div'); o.className='modal-overlay'; o.addEventListener('click',(e)=>{if(e.target===o)o.remove();}); return o; }
+function createModal(){ const m=document.createElement('div'); m.className='modal'; return m; }
+function loadFromModal(id){ document.getElementById('problemIdInput').value=id; loadProblemById(); }
+function removeFavorite(id){ saveFavorites(getFavorites().filter(x=>x!==id)); }
+
+// ==================== 完成処理 ====================
+function checkCompletion(){
+  if(countFilled()<SIZE*SIZE)return;
+  let ok=true; for(let r=0;r<SIZE;r++)if(checkRow(r).length>0){ok=false;break;} if(ok)for(let c=0;c<SIZE;c++)if(checkCol(c).length>0){ok=false;break;}
+  if(!ok){updateStatus(t('statusWrong'),'error');return;}
+  completed=true;stopTimer(); const time=getTime(),total=stepCount,rate=total>0?logicalChainCount/total:0;
+  let ge='',gt='';
+  if(mistakeCount===0&&rate>=0.9){ge='🏆';gt='PERFECT!';}else if(mistakeCount===0){ge='🌟';gt='GREAT';}else if(rate>=0.5){ge='👍';gt='GOOD';}else{ge='📝';gt='CLEAR';}
+  updateStatus(t('statusComplete',{grade:`${ge} ${gt}`}),'success');
+  logEntries.push(t('logComplete',{time:time,chain:logicalChainCount,total:total,mistakes:mistakeCount,grade:gt})); updateLog();
+  addHistoryRecord({id:curProblemId,difficulty:DIFFICULTY_TABLE[selDiff]?.label||'?',time,chain:logicalChainCount,total,mistakes:mistakeCount,grade:gt,date:new Date().toISOString()});
+  const overlay=createModalOverlay(); const modal=createModal();
+  const favClass=isFavorite(curProblemId)?'active':'';
+  const logicRate=curMetrics?Math.round(curMetrics.propagateCompleteRate*100):'?';
+  const t3c=curMetrics?curMetrics.t3Count:'?'; const maxCh=curMetrics?curMetrics.maxChainLength:'?';
+  modal.innerHTML=`
+    <h2>${ge}</h2><div class="grade">${gt}</div>
+    <div class="detail">${t('modalDetailTime')} <span>${time}</span></div>
+    <div class="detail">${t('modalDetailChain')} <span>${logicalChainCount}/${total}</span> (${Math.round(rate*100)}%)</div>
+    <div class="detail">${t('modalDetailMistakes')} <span>${mistakeCount}</span></div>
+    <div class="detail-stats">${t('modalDetailStats',{logicRate:logicRate,t3:t3c,maxChain:maxCh})}</div>
+    <div class="id-box">
+      <span>🧩 <strong>${curProblemId}</strong></span>
+      <button class="copy-btn">${t('modalCopy')}</button>
+      <button class="fav-btn ${favClass}">${isFavorite(curProblemId)?'💔':'❤️'}</button>
+    </div>
+    <button class="btn-next">${t('modalNext')}</button>
+    <button class="close-btn">${t('modalClose')}</button>
+  `;
+  modal.querySelector('.copy-btn').addEventListener('click',()=>copyProblemId(curProblemId));
+  modal.querySelector('.fav-btn').addEventListener('click',function(){ toggleFavorite(curProblemId); this.textContent=isFavorite(curProblemId)?'💔':'❤️'; this.classList.toggle('active',isFavorite(curProblemId)); });
+  modal.querySelector('.btn-next').addEventListener('click',()=>{overlay.remove(); startGame();});
+  modal.querySelector('.close-btn').addEventListener('click',()=>overlay.remove());
+  overlay.appendChild(modal); document.body.appendChild(overlay);
+  const cells=gridEl.querySelectorAll('.cell'); cells.forEach((el,i)=>setTimeout(()=>{el.style.background='#d4edda';el.style.transform='scale(1.05)';setTimeout(()=>{el.style.background='';el.style.transform='';},400);},i*30));
+}
+
+// ==================== プレイ補助 ====================
+function isMoveValid(g,r,c,n){ if(curHints)for(const h of curHints)if((h.r1===r&&h.c1===c)||(h.r2===r&&h.c2===c)){const o=h.r1===r?h.r2:h.r1,o2=h.c1===c?h.c2:h.c1;if(g[o][o2]!==null&&Math.abs(n-g[o][o2])!==h.diff)return false;} const old=g[r][c];g[r][c]=n;const rOk=checkRow(r).length===0,cOk=checkCol(c).length===0;g[r][c]=old;return rOk&&cOk; }
+function getCandidateCount(r,c){let n=0;for(const x of NUMBERS)if(isMoveValid(userGrid,r,c,x))n++;return n;}
+function handleNumberSelect(r,c,num){
+  if(isFixed[r][c]||completed||!gameReady)return;
+  if(curHints)for(const h of curHints)if((h.r1===r&&h.c1===c)||(h.r2===r&&h.c2===c)){const o=h.r1===r?h.r2:h.r1,o2=h.c1===c?h.c2:h.c1;if(userGrid[o][o2]!==null&&Math.abs(num-userGrid[o][o2])!==h.diff){mistakeCount++;updateLiveStats();updateStatus(t('statusMistakeAdj',{r:r+1,c:c+1,expected:h.diff}),'error');logEntries.push(t('statusMistakeAdj',{r:r+1,c:c+1,expected:h.diff}));renderAll();updateLog();return;}}
+  const old=userGrid[r][c];userGrid[r][c]=num;isFilled[r][c]=true;
+  const rE=checkRow(r),cE=checkCol(c);
+  if(rE.length||cE.length){userGrid[r][c]=old;isFilled[r][c]=(old!==null);mistakeCount++;updateLiveStats();updateStatus(t('statusMistakeSeq',{r:r+1,c:c+1}),'error');logEntries.push(t('statusMistakeSeq',{r:r+1,c:c+1}));renderAll();updateLog();return;}
+  errorCells.delete(`${r},${c}`);
+  if(old===null){stepCount++;const cands=getCandidateCount(r,c);if(cands===1)logicalChainCount++;logEntries.push(t('logStep',{step:stepCount,r:r+1,c:c+1,num:num,cands:cands===1?t('logStepChain'):t('logStepMultiple')}));}
+  else logEntries.push(t('logEdit',{r:r+1,c:c+1,old:old,new:num}));
+  updateLiveStats();renderAll();updateStatus(t('statusInput',{r:r+1,c:c+1,num:num}),'info');checkCompletion();
+}
+let lpTimer=null,lpTrig=false;
+function startLongPress(r,c){ if(!isGenerating&&!isFixed[r][c]&&isFilled[r][c]&&!completed&&gameReady){lpTrig=false;lpTimer=setTimeout(()=>{lpTrig=true;handleDelete(r,c);},600);} }
+function cancelLongPress(){ if(lpTimer){clearTimeout(lpTimer);lpTimer=null;} }
+function handleDelete(r,c){ if(isFixed[r][c]||!isFilled[r][c]||completed||!gameReady)return; const old=userGrid[r][c];userGrid[r][c]=null;isFilled[r][c]=false;errorCells.delete(`${r},${c}`);logEntries.push(t('logDelete',{r:r+1,c:c+1}));renderAll();updateStatus(t('statusDeleteShort'),'info'); }
+function checkRow(r){ const e=[],cur=getRowDiffSequence(userGrid,r),hint=curRowHints[r];for(let i=0;i<cur.length;i++)if(cur[i]!==null&&cur[i]!==hint[i])e.push({c:i,expected:hint[i],actual:cur[i]});return e;}
+function checkCol(c){ const e=[],cur=getColDiffSequence(userGrid,c),hint=curColHints[c];for(let i=0;i<cur.length;i++)if(cur[i]!==null&&cur[i]!==hint[i])e.push({r:i,expected:hint[i],actual:cur[i]});return e;}
+function countFilled(){let c=0;for(let r=0;r<SIZE;r++)for(let cc=0;cc<SIZE;cc++)if(isFilled[r][cc])c++;return c;}
+function updateLiveStats(){liveChain.textContent=logicalChainCount;liveMistakes.textContent=mistakeCount;}
+function updateStatus(m,c){statusEl.textContent=m;statusEl.className='status'+(c?' '+c:'');}
+
+// ==================== 分割render ====================
+function renderAll(){ renderGrid(); renderStatus(); }
+function renderGrid(){
+  gridEl.innerHTML='';
+  for(let r=0;r<=SIZE;r++)for(let c=0;c<=SIZE;c++){
+    const div=document.createElement('div');
+    if(r===0&&c===0)div.className='corner';
+    else if(r===0){div.className='col-hint';const seq=curColHints[c-1]||[];div.innerHTML=seq.map(d=>`<span>${d}</span>`).join('');}
+    else if(c===0){div.className='row-hint';const seq=curRowHints[r-1]||[];div.innerHTML=seq.map(d=>`<span>${d}</span>`).join('');}
+    else{
+      const ri=r-1,ci=c-1;div.className='cell';div.dataset.r=ri;div.dataset.c=ci;
+      const val=userGrid[ri][ci];
+      if(isFixed[ri][ci]){div.classList.add('fixed');div.textContent=val;}
+      else if(isFilled[ri][ci]){div.classList.add('filled');div.textContent=val;}
+      else{div.classList.add('empty');div.textContent='?';}
+      if(errorCells.has(`${ri},${ci}`))div.classList.add('error');
+      div.addEventListener('click',(e)=>{if(lpTrig){lpTrig=false;return;}showNumberPicker(ri,ci);});
+      div.addEventListener('pointerdown',(e)=>{if(e.pointerType==='mouse'&&e.button!==0)return;startLongPress(ri,ci);});
+      div.addEventListener('pointerup',cancelLongPress);div.addEventListener('pointercancel',cancelLongPress);div.addEventListener('pointerleave',cancelLongPress);
+      div.addEventListener('contextmenu',e=>e.preventDefault());
+    }
+    gridEl.appendChild(div);
+  }
+}
+function renderStatus(){ updateScoreDisplay();updateDiffLabel();updateLog(); }
+function updateScoreDisplay(){
+  if(curMetrics){
+    scoreBadge.textContent = t('scoreDisplay', {score: Math.max(0,Math.min(1,curScore)).toFixed(3)});
+    scoreDisp.textContent = t('scoreDetail', {fixed:curMetrics.fixedCount, density:curMetrics.chainDensity.toFixed(2), t3:curMetrics.t3Count, maxChain:curMetrics.maxChainLength});
+  } else { scoreBadge.textContent = t('scoreBadge'); scoreDisp.textContent = ''; }
+}
+function updateDiffLabel(){
+  if(!curMetrics){diffLabel.textContent='';return;}
+  const cfg=DIFFICULTY_TABLE[selDiff];
+  diffLabel.textContent = t('difficultyLabelText', {stars:cfg.label, fixed:cfg.fixedCount});
+}
+function updateLog(){ const html=logEntries.map(e=>{if(e.includes('Step')||e.includes('Chain'))return`<div class="event-fix">• ${e}</div>`;if(e.includes('✨')||e.includes('Generated'))return`<div class="event-gen">• ${e}</div>`;if(e.includes('❌')||e.includes('invalid')||e.includes('mismatch'))return`<div class="event-error">• ${e}</div>`;if(e.includes('✅')||e.includes('Started'))return`<div class="event-info">• ${e}</div>`;if(e.includes('🗑️')||e.includes('deleted'))return`<div class="event-delete">• ${e}</div>`;if(e.includes('🔍')||e.includes('Checked'))return`<div class="event-check">• ${e}</div>`;return`• ${e}`;}).join('');logEl.innerHTML=html;logEl.scrollTop=logEl.scrollHeight;}
+function showHint(){ if(!curSol||completed||!gameReady)return; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){if(isFilled[r][c])continue;const cands=NUMBERS.filter(n=>isMoveValid(userGrid,r,c,n));if(cands.length===1){const cell=gridEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);if(cell){cell.classList.add('hint-glow');setTimeout(()=>cell.classList.remove('hint-glow'),1500);}updateStatus(t('statusHint',{r:r+1,c:c+1,num:cands[0]}),'info');return;}}updateStatus(t('statusNoHint'),'info');}
+function checkPartial(){ let err=false;errorCells.clear();for(let r=0;r<SIZE;r++){const re=checkRow(r);for(const e of re){errorCells.add(`${r},${e.c}`);err=true;}}for(let c=0;c<SIZE;c++){const ce=checkCol(c);for(const e of ce){errorCells.add(`${e.r},${c}`);err=true;}}renderAll(); if(err){updateStatus(t('statusCheckError'),'error');logEntries.push(t('logCheck',{count:errorCells.size}));}else{const f=countFilled();if(f===SIZE*SIZE)checkCompletion();else updateStatus(t('statusCheckOk',{filled:f,total:SIZE*SIZE}),'info');}updateLog();}
+
+// ==================== NumberPicker ====================
+let pickerOv=null,pickerEl=null;
+function removePicker(){if(pickerOv){pickerOv.remove();pickerOv=null;}if(pickerEl){pickerEl.remove();pickerEl=null;}}
+function showNumberPicker(r,c){
+  if(isGenerating||isFixed[r][c]||completed||!gameReady)return;
+  removePicker();const cellEl=gridEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);if(!cellEl)return;
+  const rect=cellEl.getBoundingClientRect();let cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  cx=Math.min(Math.max(cx,120),window.innerWidth-120);cy=Math.min(Math.max(cy,140),window.innerHeight-140);
+  pickerOv=document.createElement('div');pickerOv.className='picker-overlay';pickerOv.addEventListener('click',removePicker);document.body.appendChild(pickerOv);
+  pickerEl=document.createElement('div');pickerEl.className='number-picker';pickerEl.style.left=cx+'px';pickerEl.style.top=cy+'px';
+  for(const num of[1,2,3,4,5,6]){const btn=document.createElement('button');btn.className='picker-btn';btn.textContent=num;btn.addEventListener('click',(e)=>{e.stopPropagation();handleNumberSelect(r,c,num);removePicker();});pickerEl.appendChild(btn);}
+  const closeBtn=document.createElement('button');closeBtn.className='picker-close';closeBtn.textContent='✕';closeBtn.addEventListener('click',(e)=>{e.stopPropagation();removePicker();});pickerEl.appendChild(closeBtn);
+  document.body.appendChild(pickerEl);
+}
+
+// ==================== 言語切り替え ====================
+function switchLanguage(lang) {
+  currentLang = lang;
+  applyStaticTranslations();
+  updateStartButton();
+  if (curSol) {
+    probIdDisp.innerHTML = `${t('problemIdPrefix')}<span>${curProblemId}</span>`;
+    updateScoreDisplay(); updateDiffLabel(); updateLog();
+  } else {
+    updateStatus(t('statusReady'), 'ready');
+    logEntries=[t('logReady')]; updateLog();
+  }
+  langJaBtn.classList.toggle('active', lang==='ja');
+  langEnBtn.classList.toggle('active', lang==='en');
+}
+
+// ==================== 初期化 ====================
+function init(){
+  const settings=getSettings(); selDiff=settings.difficulty||3;
+  buildDiffButtons(); setDifficulty(selDiff);
+
+  curSol=null;curFixed=null;curHints=null;curRowHints=[];curColHints=[];
+  userGrid=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  isFixed=Array.from({length:SIZE},()=>Array(SIZE).fill(false));
+  isFilled=Array.from({length:SIZE},()=>Array(SIZE).fill(false));
+  stepCount=0;mistakeCount=0;logicalChainCount=0;completed=false;gameReady=false;
+  curProblemId=null;probIdDisp.innerHTML='';
+  resetTimer();updateLiveStats();applyStaticTranslations();renderAll();
+  updateStatus(t('statusReady'),'ready');
+  logEntries=[t('logReady')];updateLog();
+
+  document.getElementById('btnHint').addEventListener('click',showHint);
+  document.getElementById('btnCheck').addEventListener('click',checkPartial);
+  document.getElementById('btnReset').addEventListener('click',resetGame);
+  document.getElementById('btnLoadId').addEventListener('click',loadProblemById);
+  document.getElementById('btnFavorites').addEventListener('click',showFavoritesModal);
+  document.getElementById('btnHistory').addEventListener('click',showHistoryModal);
+  document.getElementById('btnDaily').addEventListener('click',startDailyGame);
+  langJaBtn.addEventListener('click',()=>switchLanguage('ja'));
+  langEnBtn.addEventListener('click',()=>switchLanguage('en'));
+
+  updateStartButton();
+}
+init();
+</script>
+</body>
+</html>

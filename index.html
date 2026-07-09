@@ -113,6 +113,17 @@
   .picker-btn:active { transform: scale(0.88); background: #d4edda; border-color: #155724; }
   .picker-close { width: 100%; aspect-ratio: 1; border: 2px solid #e74c3c; border-radius: 50%; background: white; font-size: 18px; color: #e74c3c; cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center; user-select: none; }
   .picker-close:active { transform: scale(0.88); background: #fce4ec; }
+
+  /* 画面揺れアニメーション */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
+  .shake {
+    animation: shake 0.4s ease-in-out;
+  }
+
   @media (max-width: 420px) {
     .grid-container > div { font-size: 11px; min-height: 28px; min-width: 28px; }
     .grid-container .cell { font-size: 16px; }
@@ -127,7 +138,7 @@
 </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="mainContainer">
   <h1>🧩 <span>Diff</span>inity</h1>
   <div class="subtitle">
     <span class="badge badge-auto" id="badgeAuto">差数列ヒント</span>
@@ -190,7 +201,7 @@
  */
 
 // ============================================================
-// Diffinity v1.2 — 完全多言語版（リセット→再開 根本修正 / ライセンス表記追加）
+// Diffinity v1.2 — 完全多言語版（画面揺れ追加）
 // ============================================================
 const SIZE=5, N=6, NUMBERS=[1,2,3,4,5,6], TARGET_SCORE=0.60, GENERATOR_VERSION='1.2';
 const DIFFICULTY_TABLE={
@@ -458,6 +469,7 @@ const btnStart=document.getElementById('btnStart'); const timerDisp=document.get
 const liveChain=document.getElementById('liveChain'); const liveMistakes=document.getElementById('liveMistakes');
 const probIdDisp=document.getElementById('problemIdDisplay'); const diffSelector=document.getElementById('difficultySelector');
 const langJaBtn=document.getElementById('langJa'); const langEnBtn=document.getElementById('langEn');
+const mainContainer = document.getElementById('mainContainer'); // 揺れ用
 
 // ==================== タイマー ====================
 function startTimer(){ if(timerRun)return; timerRun=true; completed=false; timerSec=0; timerStart=Date.now(); timerDisp.className='timer running'; updateTimerDisp(); timerInt=setInterval(()=>{ timerSec=Math.floor((Date.now()-timerStart)/1000); updateTimerDisp(); },200); }
@@ -465,6 +477,15 @@ function stopTimer(){ if(timerInt){clearInterval(timerInt);timerInt=null;} timer
 function resetTimer(){ stopTimer(); timerSec=0; completed=false; timerDisp.className='timer stopped'; updateTimerDisp(); }
 function updateTimerDisp(){ const m=String(Math.floor(timerSec/60)).padStart(2,'0'), s=String(timerSec%60).padStart(2,'0'); timerDisp.textContent=`⏱️ ${m}:${s}`; }
 function getTime(){ const m=String(Math.floor(timerSec/60)).padStart(2,'0'), s=String(timerSec%60).padStart(2,'0'); return `${m}:${s}`; }
+
+// ==================== 画面揺れ処理 ====================
+function triggerShake() {
+  if (mainContainer.classList.contains('shake')) return; // 連続防止
+  mainContainer.classList.add('shake');
+  setTimeout(() => {
+    mainContainer.classList.remove('shake');
+  }, 400); // アニメーション時間と同じ
+}
 
 // ==================== 難易度UI ====================
 function buildDiffButtons(){
@@ -637,10 +658,10 @@ function isMoveValid(g,r,c,n){ if(curHints)for(const h of curHints)if((h.r1===r&
 function getCandidateCount(r,c){let n=0;for(const x of NUMBERS)if(isMoveValid(userGrid,r,c,x))n++;return n;}
 function handleNumberSelect(r,c,num){
   if(isFixed[r][c]||completed||!gameReady)return;
-  if(curHints)for(const h of curHints)if((h.r1===r&&h.c1===c)||(h.r2===r&&h.c2===c)){const o=h.r1===r?h.r2:h.r1,o2=h.c1===c?h.c2:h.c1;if(userGrid[o][o2]!==null&&Math.abs(num-userGrid[o][o2])!==h.diff){mistakeCount++;updateLiveStats();updateStatus(t('statusMistakeAdj',{r:r+1,c:c+1,expected:h.diff}),'error');logEntries.push(t('statusMistakeAdj',{r:r+1,c:c+1,expected:h.diff}));renderAll();updateLog();return;}}
+  if(curHints)for(const h of curHints)if((h.r1===r&&h.c1===c)||(h.r2===r&&h.c2===c)){const o=h.r1===r?h.r2:h.r1,o2=h.c1===c?h.c2:h.c1;if(userGrid[o][o2]!==null&&Math.abs(num-userGrid[o][o2])!==h.diff){mistakeCount++;updateLiveStats();updateStatus(t('statusMistakeAdj',{r:r+1,c:c+1,expected:h.diff}),'error');logEntries.push(t('statusMistakeAdj',{r:r+1,c:c+1,expected:h.diff}));renderAll();updateLog();triggerShake();return;}}
   const old=userGrid[r][c];userGrid[r][c]=num;isFilled[r][c]=true;
   const rE=checkRow(r),cE=checkCol(c);
-  if(rE.length||cE.length){userGrid[r][c]=old;isFilled[r][c]=(old!==null);mistakeCount++;updateLiveStats();updateStatus(t('statusMistakeSeq',{r:r+1,c:c+1}),'error');logEntries.push(t('statusMistakeSeq',{r:r+1,c:c+1}));renderAll();updateLog();return;}
+  if(rE.length||cE.length){userGrid[r][c]=old;isFilled[r][c]=(old!==null);mistakeCount++;updateLiveStats();updateStatus(t('statusMistakeSeq',{r:r+1,c:c+1}),'error');logEntries.push(t('statusMistakeSeq',{r:r+1,c:c+1}));renderAll();updateLog();triggerShake();return;}
   errorCells.delete(`${r},${c}`);
   if(old===null){stepCount++;const cands=getCandidateCount(r,c);if(cands===1)logicalChainCount++;logEntries.push(t('logStep',{step:stepCount,r:r+1,c:c+1,num:num,cands:cands===1?t('logStepChain'):t('logStepMultiple')}));}
   else logEntries.push(t('logEdit',{r:r+1,c:c+1,old:old,new:num}));
